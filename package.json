@@ -1,0 +1,14 @@
+{
+  "name": "my-food-app",
+  "version": "1.0.0",
+  "description": "Food delivery app",
+  "main": "app.js",
+  "scripts": {
+    "dev": "nodemon app.js"
+  },
+  "author": "Sasa Jovanovic",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.17.1"
+  }
+}
