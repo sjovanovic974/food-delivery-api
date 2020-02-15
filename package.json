@@ -4,7 +4,8 @@
   "description": "Food delivery app",
   "main": "app.js",
   "scripts": {
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "debug": "ndb server.js"
   },
   "author": "Sasa Jovanovic",
   "license": "ISC",

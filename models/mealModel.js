@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const slugify = require('slugify');
+const validator = require('validator');
 
 const mealSchema = new mongoose.Schema(
   {
@@ -10,6 +11,7 @@ const mealSchema = new mongoose.Schema(
       unique: true,
       maxlength: [50, 'A meal name must have less or equal to 50 characters!'],
       minlength: [2, 'A meal name must have more or equal to 2 characters!']
+      //validate: [validator.isAlpha, 'A meal name must only contain characters!']
     },
     slug: String,
     description: {
