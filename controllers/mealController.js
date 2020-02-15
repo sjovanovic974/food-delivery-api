@@ -1,5 +1,7 @@
 const Meal = require('./../models/mealModel');
 const APIFeatures = require('./../utils/apiFeatures');
+const catchAsync = require('./../utils/catchAsync');
+const AppError = require('./../utils/appError');
 
 exports.aliasTopVegetarian = (req, res, next) => {
   req.query.limit = '3';
@@ -8,144 +10,116 @@ exports.aliasTopVegetarian = (req, res, next) => {
   next();
 };
 
-exports.getAllMeals = async (req, res) => {
-  try {
-    // Executing the Query
-    const features = new APIFeatures(Meal.find(), req.query)
-      .filter()
-      .sort()
-      .limitFields()
-      .paginate();
-    const meals = await features.query;
+exports.getAllMeals = catchAsync(async (req, res, next) => {
+  // Executing the Query
+  const features = new APIFeatures(Meal.find(), req.query)
+    .filter()
+    .sort()
+    .limitFields()
+    .paginate();
+  const meals = await features.query;
 
-    // Sending response
-    res.status(200).json({
-      status: 'success',
-      results: meals.length,
-      data: {
-        meals
+  // Sending response
+  res.status(200).json({
+    status: 'success',
+    results: meals.length,
+    data: {
+      meals
+    }
+  });
+});
+
+exports.getMealStats = catchAsync(async (req, res, next) => {
+  const stats = await Meal.aggregate([
+    // {
+    //   $match: { category: 'pizza' }
+    // },
+    {
+      $group: {
+        _id: '$isVegetarian',
+        numMeals: { $sum: 1 },
+        avgPrice: { $avg: '$price' },
+        minPrice: { $min: '$price' },
+        maxPrice: { $max: '$price' }
       }
-    });
-  } catch (error) {
-    res.status(404).json({
-      status: 'fail',
-      message: error.message
-    });
-  }
-};
-
-exports.getMealStats = async (req, res) => {
-  try {
-    const stats = await Meal.aggregate([
-      // {
-      //   $match: { category: 'pizza' }
-      // },
-      {
-        $group: {
-          _id: '$isVegetarian',
-          numMeals: { $sum: 1 },
-          avgPrice: { $avg: '$price' },
-          minPrice: { $min: '$price' },
-          maxPrice: { $max: '$price' }
-        }
-      },
-      {
-        $sort: {
-          maxPrice: -1
-        }
-      },
-      {
-        $addFields: {
-          vegetarian: '$_id'
-        }
-      },
-      {
-        $project: {
-          _id: 0
-        }
+    },
+    {
+      $sort: {
+        maxPrice: -1
       }
-    ]);
-
-    res.status(200).json({
-      status: 'success',
-      data: {
-        stats
+    },
+    {
+      $addFields: {
+        vegetarian: '$_id'
       }
-    });
-  } catch (error) {
-    res.status(404).json({
-      status: 'fail',
-      message: error.message
-    });
-  }
-};
-
-exports.getMeal = async (req, res) => {
-  try {
-    const meal = await Meal.findById(req.params.id);
-    res.status(200).json({
-      status: 'success',
-      data: {
-        meal
+    },
+    {
+      $project: {
+        _id: 0
       }
-    });
-  } catch (error) {
-    res.status(404).json({
-      status: 'fail',
-      message: error
-    });
-  }
-};
+    }
+  ]);
 
-exports.createMeal = async (req, res) => {
-  try {
-    const newMeal = await Meal.create(req.body);
-    res.status(201).json({
-      status: 'success',
-      data: {
-        meal: newMeal
-      }
-    });
-  } catch (error) {
-    res.status(400).json({
-      status: 'fail',
-      message: error
-    });
-  }
-};
+  res.status(200).json({
+    status: 'success',
+    data: {
+      stats
+    }
+  });
+});
 
-exports.updateMeal = async (req, res) => {
-  try {
-    const meal = await Meal.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-      runValidators: true
-    });
+exports.getMeal = catchAsync(async (req, res, next) => {
+  const meal = await Meal.findById(req.params.id);
 
-    res.status(200).json({
-      status: 'success',
-      data: {
-        meal
-      }
-    });
-  } catch (error) {
-    res.status(404).json({
-      status: 'fail',
-      message: error
-    });
+  if (!meal) {
+    return next(new AppError('No meal found with this ID', 404));
   }
-};
 
-exports.deleteMeal = async (req, res) => {
-  try {
-    await Meal.findByIdAndDelete(req.params.id);
-    res.status(204).json({
-      status: 'success',
-      data: null
-    });
-  } catch (error) {
-    res.status(404).json({
-      status: 'fail',
-      message: error
-    });
+  res.status(200).json({
+    status: 'success',
+    data: {
+      meal
+    }
+  });
+});
+
+exports.createMeal = catchAsync(async (req, res, next) => {
+  const newMeal = await Meal.create(req.body);
+  res.status(201).json({
+    status: 'success',
+    data: {
+      meal: newMeal
+    }
+  });
+});
+
+exports.updateMeal = catchAsync(async (req, res, next) => {
+  const meal = await Meal.findByIdAndUpdate(req.params.id, req.body, {
+    new: true,
+    runValidators: true
+  });
+
+  if (!meal) {
+    return next(new AppError('No meal found with this ID', 404));
   }
-};
+
+  res.status(200).json({
+    status: 'success',
+    data: {
+      meal
+    }
+  });
+});
+
+exports.deleteMeal = catchAsync(async (req, res, next) => {
+  const meal = await Meal.findByIdAndDelete(req.params.id);
+
+  if (!meal) {
+    return next(new AppError('No meal found with this ID', 404));
+  }
+
+  res.status(204).json({
+    status: 'success',
+    data: null
+  });
+});

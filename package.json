@@ -5,6 +5,7 @@
   "main": "app.js",
   "scripts": {
     "dev": "nodemon server.js",
+    "prod": "env NODE_ENV=production nodemon server.js",
     "debug": "ndb server.js"
   },
   "author": "Sasa Jovanovic",
